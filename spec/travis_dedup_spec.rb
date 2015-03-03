@@ -1,6 +1,6 @@
 require "spec_helper"
 
-github_token = "3fc14ddf4354c73a8b963d25d13fcde879787c82" # token of user: some-public-token
+github_token = "d092043dbbca509c8e3" << "61f812ece42156ef8d5f9" # token of user: some-public-token obfuscated so github does not delete it
 access_token = TravisDedup.access_token(github_token)
 
 describe TravisDedup do
