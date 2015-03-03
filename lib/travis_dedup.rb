@@ -3,6 +3,8 @@ require 'json'
 require 'optparse'
 
 module TravisDedup
+  PENDING = %w[created started queued]
+
   class << self
     attr_accessor :pro
 
@@ -41,7 +43,7 @@ module TravisDedup
       builds = request(:get, "repos/#{repo}/builds", {}, headers).fetch("builds")
 
       seen = []
-      builds.select! { |b| ["started", "create"].include?(b.fetch("state")) }
+      builds.select! { |b| PENDING.include?(b.fetch("state")) }
       builds.select do |build|
         pr = build.fetch("pull_request_number")
         id = build.fetch("id")
