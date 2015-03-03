@@ -40,8 +40,12 @@ module TravisDedup
 
     def request(method, path, params, headers={})
       response = Faraday.send(method, "#{host}/#{path}", params, headers)
-      raise response.inspect unless [200, 204].include?(response.status)
-      JSON.parse(response.body)
+      case response.status
+      when 200 then JSON.parse(response.body)
+      when 204 then nil
+      else
+        raise response.inspect
+      end
     end
   end
 end
