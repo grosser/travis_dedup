@@ -25,6 +25,6 @@ gem install travis_dedup
 
 Author
 ======
-[Michael Grosser](http://grosser.it)
+[Michael Grosser](http://grosser.it)<br/>
 michael@grosser.it<br/>
 License: MIT
