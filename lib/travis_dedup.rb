@@ -1,9 +1,37 @@
 require 'faraday'
 require 'json'
+require 'optparse'
 
 module TravisDedup
   class << self
     attr_accessor :pro
+
+    def cli(argv)
+      parser = OptionParser.new do |opts|
+        opts.banner = <<-BANNER.gsub(/^          /, "")
+          Stop all builds on the same PR when a new job starts.
+
+          Usage:
+              travis-dedup your_org/your_repo $TRAVIS_ACCESS_TOKEN --pro
+
+          Options:
+        BANNER
+        opts.on("--pro", "travis pro") { self.pro = true }
+        opts.on("-h", "--help","Show this") { puts opts; exit }
+        opts.on('-v', '--version','Show Version'){ require 'travis_dedup/version'; puts TravisDedup::VERSION; exit}
+      end
+      parser.parse!(argv)
+
+      unless argv.size == 2
+        puts parser
+        return 1
+      end
+
+      canceled = dedup(*argv)
+      canceled = (canceled.any? ? canceled.map { |b| b.fetch("id") }.join(", ") : "None")
+      puts "Builds canceled: #{canceled}"
+      0
+    end
 
     def dedup(repo, access_token)
       headers = {
@@ -18,7 +46,6 @@ module TravisDedup
         pr = build.fetch("pull_request_number")
         id = build.fetch("id")
         if seen.include?(pr)
-          puts "Canceling build #{id}"
           request :post, "builds/#{id}/cancel", {}, headers
           true
         else

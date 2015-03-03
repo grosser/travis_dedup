@@ -11,6 +11,7 @@ Gem::Specification.new name, TravisDedup::VERSION do |s|
   s.required_ruby_version = '>= 1.9.3'
   s.add_runtime_dependency "faraday"
   s.add_runtime_dependency "json"
+  s.executables = ["travis-dedup"]
 end
 
 
