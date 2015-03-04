@@ -29,10 +29,14 @@ module TravisDedup
         return 1
       end
 
-      canceled = dedup(*argv)
-      canceled = (canceled.any? ? canceled.map { |b| b.fetch("id") }.join(", ") : "None")
-      puts "Builds canceled: #{canceled}"
+      puts dedup_message(*argv, options)
       0
+    end
+
+    def dedup_message(repo, access_token)
+      canceled = dedup(repo, access_token)
+      canceled = (canceled.any? ? canceled.map { |b| b.fetch("id") }.join(", ") : "None")
+      "Builds canceled: #{canceled}"
     end
 
     def dedup(repo, access_token)
