@@ -8,7 +8,7 @@ require 'travis_dedup/version'
 # https://discussion.heroku.com/t/filter-password-tokens-from-heroku-logs/1048
 module NoTokenLogging
   def write(*args)
-    args.first.sub!(/token=\S+/, "token=[FILTERED]")
+    args[0] = args[0].sub(/token=\S+/, "token=[FILTERED]")
     super
   end
 end
