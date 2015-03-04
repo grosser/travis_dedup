@@ -6,7 +6,7 @@ module TravisDedup
   PENDING = %w[created started queued]
 
   class << self
-    attr_accessor :pro
+    attr_accessor :pro, :verbose
 
     def cli(argv)
       parser = OptionParser.new do |opts|
@@ -19,6 +19,7 @@ module TravisDedup
           Options:
         BANNER
         opts.on("--pro", "travis pro") { self.pro = true }
+        opts.on("--verbose", "more noise") { self.verbose = true }
         opts.on("-h", "--help","Show this") { puts opts; exit }
         opts.on('-v', '--version','Show Version'){ require 'travis_dedup/version'; puts TravisDedup::VERSION; exit}
       end
@@ -45,6 +46,7 @@ module TravisDedup
         'Accept' => 'application/vnd.travis-ci.2+json' # otherwise we only get half the build data
       }
       builds = request(:get, "repos/#{repo}/builds", {}, headers).fetch("builds")
+      puts "Found #{builds.size} builds" if verbose
 
       seen = []
       builds.select! { |b| PENDING.include?(b.fetch("state")) }
