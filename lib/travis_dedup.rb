@@ -29,7 +29,7 @@ module TravisDedup
         return 1
       end
 
-      puts dedup_message(*argv, options)
+      puts dedup_message(*argv)
       0
     end
 
