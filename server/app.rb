@@ -17,6 +17,18 @@ class ProdLog
   end
 end
 
+LAST_CALLS = {}
+
+def rate_limit(key, interval)
+  now = Time.now.to_i
+  if !LAST_CALLS[key] || LAST_CALLS[key] < (now - interval)
+    LAST_CALLS[key] = now
+    false
+  else
+    true
+  end
+end
+
 configure do
   disable :logging
   use Rack::CommonLogger, ProdLog
@@ -28,12 +40,17 @@ end
 
 post "/github" do
   repo = params.fetch("repo")
-  ProdLog.write "STARTED #{repo}"
 
-  sleep((params["delay"] || 5).to_i) # wait for travis to see the newly pushed commit
+  result = if rate_limit(repo, 5)
+    "Too many requests"
+  else
+    ProdLog.write "STARTED #{repo}"
 
-  TravisDedup.pro = params["pro"]
-  result = TravisDedup.dedup_message(repo, params.fetch("token"))
+    sleep((params["delay"] || 5).to_i) # wait for travis to see the newly pushed commit
+
+    TravisDedup.pro = params["pro"]
+    TravisDedup.dedup_message(repo, params.fetch("token"))
+  end
   ProdLog.write result
   result
 end

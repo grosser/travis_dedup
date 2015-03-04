@@ -41,7 +41,11 @@ task :test_server do
     repo = "some-public-token/travis-cron-test"
     token = "mi0l8uQlX3U5EHbE0ym31g"
     result = `curl --silent -X POST '127.0.0.1:3000/github?repo=#{repo}&token=#{token}&delay=0'`
-    raise "Server dedup failed: #{result}" unless result.include?("builds, canceled:")
+    raise "Server dedup 1 failed: #{result}" unless result.include?("builds, canceled:")
+
+    # next request must be rate limited
+    result = `curl --silent -X POST '127.0.0.1:3000/github?repo=#{repo}&token=#{token}&delay=0'`
+    raise "Server dedup 2 failed: #{result}" unless result.include?("Too many requests")
   ensure
     (child_pids(pid) + [pid]).each { |pid| Process.kill(:TERM, pid) }
   end
