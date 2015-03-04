@@ -2,28 +2,38 @@ require 'sinatra'
 require 'travis_dedup'
 require 'travis_dedup/version'
 
-# sinatra logs to stderr which is an IO
-# but we don't want to store other peoples token
-# heroku still logs them in the router level, looks like there is no way of silencing them
-# https://discussion.heroku.com/t/filter-password-tokens-from-heroku-logs/1048
-module NoTokenLogging
-  def write(*args)
-    args[0] = args[0].sub(/token=\S+/, "token=[FILTERED]")
-    super
+class ProdLog
+  def self.write(string)
+    # sinatra logs to stderr which is an IO
+    # but we don't want to store other peoples token
+    # heroku still logs them in the router level, looks like there is no way of silencing them
+    # https://discussion.heroku.com/t/filter-password-tokens-from-heroku-logs/1048
+    string = string.sub(/token=\S+/, "token=[FILTERED]")
+
+    # we run thin in multiple threads, so we need the thread id to make sense of the logs
+    string = "TID:#{Thread.current.object_id.to_s[-7..-1]} #{string}"
+
+    $stderr.write(string << "\n")
   end
 end
-IO.prepend NoTokenLogging
+
+configure do
+  disable :logging
+  use Rack::CommonLogger, ProdLog
+end
 
 get "/" do
   "Welcome to travis-dedup version #{TravisDedup::VERSION}"
 end
 
 post "/github" do
+  repo = params.fetch("repo")
+  ProdLog.write "STARTED #{repo}"
+
   sleep((params["delay"] || 5).to_i) # wait for travis to see the newly pushed commit
 
-  TravisDedup.verbose = true
   TravisDedup.pro = params["pro"]
-  result = TravisDedup.dedup_message(params.fetch("repo"), params.fetch("token"))
-  puts result
+  result = TravisDedup.dedup_message(repo, params.fetch("token"))
+  ProdLog.write result
   result
 end

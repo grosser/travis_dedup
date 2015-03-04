@@ -3,7 +3,11 @@ require "bundler/gem_tasks"
 require "bump/tasks" unless ENV["RACK_ENV"] == "production" # herkou does a rake -P :/
 
 def server(extra=nil)
-  exec "rackup server/config.ru #{extra}"
+  command = File.readlines("Procfile").first.strip.
+    sub('web: ', '').
+    sub('$PORT', '3000').
+    sub('$RACK_ENV', 'development')
+  exec "#{command} #{extra}"
 end
 
 def child_pids(pid)
@@ -27,11 +31,17 @@ end
 task :test_server do
   pid = fork { server ">/dev/null 2>&1" }
   begin
-    sleep 5
+    sleep 5 # wait for server to start
+
+    # test the welcome page
+    result = `curl --silent '127.0.0.1:3000'`
+    raise "Server version failed: #{result}" unless result.include?("Welcome to travis-dedup")
+
+    # test a dedup
     repo = "some-public-token/travis-cron-test"
     token = "mi0l8uQlX3U5EHbE0ym31g"
-    result = `curl --silent -X POST '127.0.0.1:9292/github?repo=#{repo}&token=#{token}&delay=0'`
-    raise "Server failed: #{result}" unless result.include?("Builds canceled")
+    result = `curl --silent -X POST '127.0.0.1:3000/github?repo=#{repo}&token=#{token}&delay=0'`
+    raise "Server dedup failed: #{result}" unless result.include?("builds, canceled:")
   ensure
     (child_pids(pid) + [pid]).each { |pid| Process.kill(:TERM, pid) }
   end

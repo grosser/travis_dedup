@@ -47,7 +47,7 @@ describe TravisDedup do
     end
 
     it "dedups" do
-      dedup("#{repo} #{access_token}").should == "Builds canceled: None\n"
+      dedup("#{repo} #{access_token}").should == "Found 0 builds, canceled: None\n"
     end
 
     it "shows help for strange arguments" do
@@ -55,17 +55,18 @@ describe TravisDedup do
     end
 
     it "shows canceled ids" do
-      TravisDedup.should_receive(:dedup).and_return([{"id" => 123}, {"id" => 456}])
+      TravisDedup.should_receive(:builds).and_return([{"id" => 123}, {"id" => 456}, {"id" => 123}, {"id" => 456}])
+      TravisDedup.should_receive(:dedup_builds).and_return([{"id" => 123}, {"id" => 456}])
       out = capture_stdout do
         TravisDedup.cli(["a", "b"]).should == 0
       end
-      out.should == "Builds canceled: 123, 456\n"
+      out.should == "Found 4 builds, canceled: 123, 456\n"
     end
 
     it "sets pro" do
       begin
         TravisDedup.pro.should == nil
-        TravisDedup.should_receive(:dedup).and_return([])
+        TravisDedup.should_receive(:dedup_message).and_return("")
         capture_stdout do
           TravisDedup.cli(["a", "b", "--pro"]).should == 0
         end

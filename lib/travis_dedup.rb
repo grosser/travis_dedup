@@ -19,7 +19,6 @@ module TravisDedup
           Options:
         BANNER
         opts.on("--pro", "travis pro") { self.pro = true }
-        opts.on("--verbose", "more noise") { self.verbose = true }
         opts.on("-h", "--help","Show this") { puts opts; exit }
         opts.on('-v', '--version','Show Version'){ require 'travis_dedup/version'; puts TravisDedup::VERSION; exit}
       end
@@ -34,27 +33,32 @@ module TravisDedup
       0
     end
 
-    def dedup_message(repo, access_token)
-      canceled = dedup(repo, access_token)
-      canceled = (canceled.any? ? canceled.map { |b| b.fetch("id") }.join(", ") : "None")
-      "Builds canceled: #{canceled}"
+    def dedup(repo, access_token)
+      builds = builds(repo, access_token)
+      dedup_builds(builds, access_token)
     end
 
-    def dedup(repo, access_token)
-      headers = {
-        "Authorization" => %{token "#{access_token}"},
-        'Accept' => 'application/vnd.travis-ci.2+json' # otherwise we only get half the build data
-      }
-      builds = request(:get, "repos/#{repo}/builds", {}, headers).fetch("builds")
-      puts "Found #{builds.size} builds" if verbose
+    def dedup_message(repo, access_token)
+      builds = builds(repo, access_token)
+      canceled = dedup_builds(builds, access_token)
+      canceled = (canceled.any? ? canceled.map { |b| b.fetch("id") }.join(", ") : "None")
+      "Found #{builds.size} builds, canceled: #{canceled}"
+    end
 
+    def access_token(github_token)
+      request(:post, "auth/github", github_token: github_token).fetch("access_token")
+    end
+
+    private
+
+    def dedup_builds(builds, access_token)
       seen = []
       builds.select! { |b| PENDING.include?(b.fetch("state")) }
       builds.select do |build|
         pr = build.fetch("pull_request_number")
         id = build.fetch("id")
         if seen.include?(pr)
-          request :post, "builds/#{id}/cancel", {}, headers
+          request :post, "builds/#{id}/cancel", {}, headers(access_token)
           true
         else
           seen << pr
@@ -63,11 +67,16 @@ module TravisDedup
       end
     end
 
-    def access_token(github_token)
-      request(:post, "auth/github", github_token: github_token).fetch("access_token")
+    def builds(repo, access_token)
+      request(:get, "repos/#{repo}/builds", {}, headers(access_token)).fetch("builds")
     end
 
-    private
+    def headers(access_token)
+      {
+        "Authorization" => %{token "#{access_token}"},
+        'Accept' => 'application/vnd.travis-ci.2+json' # otherwise we only get half the build data
+      }
+    end
 
     def host
       pro ? "https://api.travis-ci.com" : "https://api.travis-ci.org"
