@@ -30,7 +30,7 @@ task :test_server do
     sleep 5
     repo = "some-public-token/travis-cron-test"
     token = "mi0l8uQlX3U5EHbE0ym31g"
-    result = `curl --silent -X POST '127.0.0.1:9292/github?repo=#{repo}&token=#{token}'`
+    result = `curl --silent -X POST '127.0.0.1:9292/github?repo=#{repo}&token=#{token}&delay=0'`
     raise "Server failed: #{result}" unless result.include?("Builds canceled")
   ensure
     (child_pids(pid) + [pid]).each { |pid| Process.kill(:TERM, pid) }

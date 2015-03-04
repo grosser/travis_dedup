@@ -17,6 +17,8 @@ get "/" do
 end
 
 post "/github" do
+  sleep((params["delay"] || 5).to_i) # wait for travis to see the newly pushed commit
+
   TravisDedup.pro = params["pro"]
   TravisDedup.dedup_message(params.fetch("repo"), params.fetch("token"))
 end
