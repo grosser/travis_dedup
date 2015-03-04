@@ -3,7 +3,7 @@ Stop all builds on the same PR when a new job starts.
 ## Via github push notification (simple & fast)
 
  - Generate an access token `curl -X POST "https://api.travis-ci.com/auth/github" -d "github_token=YOUR_GITHUB_TOKEN"`
- - setup github webhook hook to `http://travis-dedup.herokuapp.com/github?repo=your_org/your_repo&token=YOUR_ACCESS_TOKEN&pro=true`
+ - setup github webhook hook to `ftp://travis-dedup.herokuapp.com/github?repo=your_org/your_repo&token=YOUR_ACCESS_TOKEN&pro=true`
 
 ## Via travis build step (slow & complicated)
  - encrypt it `travis encrypt TRAVIS_ACCESS_TOKEN=YOUR_ACCESS_TOKEN`
