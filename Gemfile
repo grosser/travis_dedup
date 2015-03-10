@@ -14,3 +14,4 @@ end
 # server
 gem "sinatra"
 gem "thin"
+gem "rollbar"
