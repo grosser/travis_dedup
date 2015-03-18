@@ -5,6 +5,7 @@ if token = ENV["ROLLBAR"]
   Rollbar.configure do |config|
     config.disable_monkey_patch = true
     config.access_token = token
+    config.exception_level_filters = { 'Sinatra::NotFound' => 'ignore' }
   end
 
   require 'rollbar/middleware/sinatra'
