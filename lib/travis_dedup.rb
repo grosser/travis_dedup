@@ -3,7 +3,7 @@ require 'json'
 require 'optparse'
 
 module TravisDedup
-  PENDING = %w[created started queued]
+  ACTIVE = %w[created started queued]
 
   class << self
     attr_accessor :pro, :verbose
@@ -34,15 +34,13 @@ module TravisDedup
     end
 
     def dedup(repo, access_token)
-      builds = builds(repo, access_token)
-      dedup_builds(builds, access_token)
+      dedup_builds(repo, access_token).last
     end
 
     def dedup_message(repo, access_token)
-      builds = builds(repo, access_token)
-      canceled = dedup_builds(builds, access_token)
+      all, canceled = dedup_builds(repo, access_token)
       canceled = (canceled.any? ? canceled.map { |b| b.fetch("id") }.join(", ") : "None")
-      "Found #{builds.size} builds, canceled: #{canceled}"
+      "Found #{all.size} builds, canceled: #{canceled}"
     end
 
     def access_token(github_token)
@@ -51,14 +49,22 @@ module TravisDedup
 
     private
 
-    def dedup_builds(builds, access_token)
+    def dedup_builds(repo, access_token)
+      builds = active_builds(repo, access_token)
+      cancel = duplicate_builds(builds)
+      cancel(cancel, access_token)
+      return builds, cancel
+    end
+
+    def cancel(builds, access_token)
+      builds.each { |build| request :post, "builds/#{build.fetch("id")}/cancel", {}, headers(access_token) }
+    end
+
+    def duplicate_builds(builds)
       seen = []
-      builds.select! { |b| PENDING.include?(b.fetch("state")) }
       builds.select do |build|
-        pr = build.fetch("pull_request_number")
-        id = build.fetch("id")
+        next unless pr = build.fetch("pull_request_number")
         if seen.include?(pr)
-          request :post, "builds/#{id}/cancel", {}, headers(access_token)
           true
         else
           seen << pr
@@ -67,8 +73,9 @@ module TravisDedup
       end
     end
 
-    def builds(repo, access_token)
+    def active_builds(repo, access_token)
       request(:get, "repos/#{repo}/builds", {}, headers(access_token)).fetch("builds")
+        .select { |b| ACTIVE.include?(b.fetch("state")) }
     end
 
     def headers(access_token)

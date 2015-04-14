@@ -55,12 +55,27 @@ describe TravisDedup do
     end
 
     it "shows canceled ids" do
-      TravisDedup.should_receive(:builds).and_return([{"id" => 123}, {"id" => 456}, {"id" => 123}, {"id" => 456}])
-      TravisDedup.should_receive(:dedup_builds).and_return([{"id" => 123}, {"id" => 456}])
+      TravisDedup.should_receive(:request).exactly(2) # cancel call
+      TravisDedup.should_receive(:active_builds).and_return([{"id" => 123}, {"id" => 456}, {"id" => 123}, {"id" => 456}])
+      TravisDedup.should_receive(:duplicate_builds).and_return([{"id" => 123}, {"id" => 456}])
       out = capture_stdout do
         TravisDedup.cli(["a", "b"]).should == 0
       end
       out.should == "Found 4 builds, canceled: 123, 456\n"
+    end
+
+    it "does not dedup branches" do
+      TravisDedup.send(:duplicate_builds, [
+        {"state" => "x", "id" => 1, "pull_request_number" => nil},
+        {"state" => "x", "id" => 1, "pull_request_number" => nil}
+      ]).should == []
+    end
+
+    it "dedups PRs" do
+      TravisDedup.send(:duplicate_builds, [
+        {"state" => "x", "id" => 1, "pull_request_number" => "123"},
+        {"state" => "x", "id" => 2, "pull_request_number" => "123"}
+      ]).should == [{"state" => "x", "id" => 2, "pull_request_number" => "123"}]
     end
 
     it "sets pro" do
