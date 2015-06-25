@@ -49,6 +49,7 @@ post "/github" do
     sleep((params["delay"] || 5).to_i) # wait for travis to see the newly pushed commit
 
     TravisDedup.pro = params["pro"]
+    TravisDedup.branches = params["branches"]
     TravisDedup.dedup_message(repo, params.fetch("token"))
   end
   ProdLog.write result

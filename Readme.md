@@ -3,8 +3,9 @@ Stop all builds on the same PR when a new job starts.
 ## Via github push notification (simple & fast)
 
  - Generate an access token `curl -X POST "https://api.travis-ci.com/auth/github" -d "github_token=YOUR_GITHUB_TOKEN"`
- - setup github webhook hook to `https://travis-dedup.herokuapp.com/github?repo=your_org/your_repo&token=YOUR_ACCESS_TOKEN&pro=true`
-
+ - setup github webhook hook to `https://travis-dedup.herokuapp.com/github?repo=your_org/your_repo&token=YOUR_ACCESS_TOKEN`
+ - add `&pro=true` if you are using travis.com / private travis
+ - add `&branches=true` if you also want to dedup builds on branches (like `master` or others)
 The hook sleeps for 5s before inspecting the builds so the newly pushed build are found too.
 
 ## Via travis build step (slow & complicated)

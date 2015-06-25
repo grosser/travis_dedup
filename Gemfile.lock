@@ -60,3 +60,6 @@ DEPENDENCIES
   thin
   travis_dedup!
   webmock
+
+BUNDLED WITH
+   1.10.2

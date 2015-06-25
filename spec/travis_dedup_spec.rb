@@ -20,6 +20,14 @@ describe TravisDedup do
   end
 
   describe ".cli" do
+    def assert_setting(setting)
+      TravisDedup.send(setting).should == nil
+      yield
+      TravisDedup.send(setting).should == true
+    ensure
+      TravisDedup.send("#{setting}=", nil)
+    end
+
     def sh(command, options={})
       result = `#{command}`
       raise result if $?.success? == !!options[:fail]
@@ -64,30 +72,50 @@ describe TravisDedup do
       out.should == "Found 4 builds, canceled: 123, 456\n"
     end
 
-    it "does not dedup branches" do
-      TravisDedup.send(:duplicate_builds, [
-        {"state" => "x", "id" => 1, "pull_request_number" => nil},
-        {"state" => "x", "id" => 1, "pull_request_number" => nil}
-      ]).should == []
+    context "with duplicate builds on branches" do
+      let(:result) do
+        TravisDedup.send(:duplicate_builds, [
+          {"state" => "x", "id" => 1, "pull_request_number" => nil, "branch" => "foo/bar"},
+          {"state" => "x", "id" => 1, "pull_request_number" => nil, "branch" => "foo/bar"}
+        ])
+      end
+
+      it "does not dedup branches" do
+        result.should == []
+      end
+
+      it "dedup branches when branches is on" do
+        begin
+          TravisDedup.branches = true
+          result.should == [{"state"=>"x", "id"=>1, "pull_request_number"=>nil, "branch"=>"foo/bar"}]
+        ensure
+          TravisDedup.branches = nil
+        end
+      end
     end
 
     it "dedups PRs" do
       TravisDedup.send(:duplicate_builds, [
-        {"state" => "x", "id" => 1, "pull_request_number" => "123"},
-        {"state" => "x", "id" => 2, "pull_request_number" => "123"}
-      ]).should == [{"state" => "x", "id" => 2, "pull_request_number" => "123"}]
+        {"state" => "x", "id" => 1, "pull_request_number" => "123", "branch" => "master"},
+        {"state" => "x", "id" => 2, "pull_request_number" => "123", "branch" => "master"}
+      ]).should == [{"state" => "x", "id" => 2, "pull_request_number" => "123", "branch" => "master"}]
     end
 
     it "sets pro" do
-      begin
-        TravisDedup.pro.should == nil
-        TravisDedup.should_receive(:dedup_message).and_return("")
-        capture_stdout do
+      TravisDedup.should_receive(:dedup_message).and_return("")
+      capture_stdout do
+        assert_setting :pro do
           TravisDedup.cli(["a", "b", "--pro"]).should == 0
         end
-        TravisDedup.pro.should == true
-      ensure
-        TravisDedup.pro = nil
+      end
+    end
+
+    it "sets branches" do
+      TravisDedup.should_receive(:dedup_message).and_return("")
+      capture_stdout do
+        assert_setting :branches do
+          TravisDedup.cli(["a", "b", "--branches"]).should == 0
+        end
       end
     end
   end

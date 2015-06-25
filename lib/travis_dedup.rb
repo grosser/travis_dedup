@@ -6,7 +6,7 @@ module TravisDedup
   ACTIVE = %w[created started queued]
 
   class << self
-    attr_accessor :pro, :verbose
+    attr_accessor :pro, :verbose, :branches
 
     def cli(argv)
       parser = OptionParser.new do |opts|
@@ -19,6 +19,7 @@ module TravisDedup
           Options:
         BANNER
         opts.on("--pro", "travis pro") { self.pro = true }
+        opts.on("--branches", "dedup builds on branches too") { self.branches = true }
         opts.on("-h", "--help","Show this") { puts opts; exit }
         opts.on('-v', '--version','Show Version'){ require 'travis_dedup/version'; puts TravisDedup::VERSION; exit}
       end
@@ -63,19 +64,26 @@ module TravisDedup
     def duplicate_builds(builds)
       seen = []
       builds.select do |build|
-        next unless pr = build.fetch("pull_request_number")
-        if seen.include?(pr)
+        pr = build.fetch "pull_request_number"
+        branch = build.fetch "branch"
+
+        next if !pr && !branches
+
+        id = pr || branch
+        if seen.include?(id)
           true
         else
-          seen << pr
+          seen << id
           false
         end
       end
     end
 
+    # see http://docs.travis-ci.com/api/#builds
     def active_builds(repo, access_token)
-      request(:get, "repos/#{repo}/builds", {}, headers(access_token)).fetch("builds")
-        .select { |b| ACTIVE.include?(b.fetch("state")) }
+      response = request(:get, "repos/#{repo}/builds", {}, headers(access_token))
+      builds = response.fetch("builds").select { |b| ACTIVE.include?(b.fetch("state")) }
+      builds.each { |build| build["branch"] = response.fetch("commits").detect { |c| c["id"] == build["commit_id"] }.fetch("branch") }
     end
 
     def headers(access_token)
