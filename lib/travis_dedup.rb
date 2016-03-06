@@ -45,7 +45,7 @@ module TravisDedup
     end
 
     def access_token(github_token)
-      request(:post, "auth/github", github_token: github_token).fetch("access_token")
+      request(:post, "auth/github", {github_token: github_token}, 'User-Agent' => 'Travis/1.0').fetch("access_token")
     end
 
     private
