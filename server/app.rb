@@ -39,7 +39,7 @@ get "/" do
 end
 
 post "/github" do
-  repo = params.fetch("repo")
+  repo = params["repo"] || halt(400, "Missing parameter repo")
 
   result = if rate_limit(repo, 5)
     "Too many requests"
@@ -48,9 +48,13 @@ post "/github" do
 
     sleep((params["delay"] || 5).to_i) # wait for travis to see the newly pushed commit
 
+    token = params["token"] ||
+      ENV['TRAVIS_ACCESS_TOKEN'] ||
+      halt(400, "Missing parameter token")
+
     TravisDedup.pro = params["pro"]
     TravisDedup.branches = params["branches"]
-    TravisDedup.dedup_message(repo, params.fetch("token"))
+    TravisDedup.dedup_message(repo, token)
   end
   ProdLog.write result
   result

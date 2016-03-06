@@ -9,6 +9,7 @@ group :test do
   gem "rspec"
   gem "bump"
   gem "webmock"
+  gem "rack-test"
 end
 
 # server
