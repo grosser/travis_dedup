@@ -1,0 +1,9 @@
+{
+  "name": "Travis Dedup",
+  "repository": "https://github.com/grosser/travis_dedup",
+  "env": {
+    "TRAVIS_ACCESS_TOKEN": {
+      "description": "Access token for TravisCi. See readme for details."
+    }
+  }
+}

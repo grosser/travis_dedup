@@ -19,6 +19,81 @@ describe TravisDedup do
     TravisDedup.send(:request, :post, "foo/bar", {}, {}).should == nil
   end
 
+  describe "server" do
+    include Rack::Test::Methods
+
+    def response
+      last_response.ok?.should == true
+      last_response.body
+    end
+
+    def with_env(k, v)
+      old = ENV[k]
+      ENV[k] = v
+      yield
+    ensure
+      ENV[k] = old
+    end
+
+    let(:app) { Sinatra::Application }
+    before do
+      ProdLog.stub(:write)
+      LAST_CALLS.clear
+    end
+
+    describe "GET /" do
+      it "says hello" do
+        get '/'
+        response.should == "Welcome to travis-dedup version #{TravisDedup::VERSION}"
+      end
+    end
+
+    describe "POST /github" do
+      before do
+        TravisDedup.stub(:dedup_message).and_return("STUB")
+        Sinatra::Application.any_instance.stub(:sleep)
+      end
+
+      it "calls dedup" do
+        TravisDedup.should_receive(:dedup_message).and_return("Message")
+        post '/github', repo: 'foo/bar', token: 'xyz'
+        response.should == "Message"
+      end
+
+      it "fails without repo" do
+        post '/github'
+        last_response.status.should == 400
+        last_response.body.should == "Missing parameter repo"
+      end
+
+      it "fails without token" do
+        post '/github', repo: "foo/bar"
+        last_response.status.should == 400
+        last_response.body.should == "Missing parameter token"
+      end
+
+      it "sleeps given delay" do
+        Sinatra::Application.any_instance.should_receive(:sleep).with(3)
+        post '/github', repo: 'foo/bar', token: 'xyz', delay: '3'
+      end
+
+      it "silently fails when rate limited" do
+        post '/github', repo: 'foo/bar', token: 'xyz'
+        response.should == "STUB"
+
+        post '/github', repo: 'foo/bar', token: 'xyz'
+        response.should == "Too many requests"
+      end
+
+      it "uses ENV token when given" do
+        with_env "TRAVIS_ACCESS_TOKEN", "fooo" do
+          post '/github', repo: 'foo/bar'
+          response.should == "STUB"
+        end
+      end
+    end
+  end
+
   describe ".cli" do
     def assert_setting(setting)
       TravisDedup.send(setting).should == nil
