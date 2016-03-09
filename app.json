@@ -1,6 +1,7 @@
 {
   "name": "Travis Dedup",
   "repository": "https://github.com/grosser/travis_dedup",
+  "template": "https://github.com/heroku/node-js-sample/tree/grosser/reproduce/app.json",
   "logo": "https://raw.githubusercontent.com/grosser/travis_dedup/master/dedup.png",
   "env": {
     "TRAVIS_ACCESS_TOKEN": {
