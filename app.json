@@ -6,6 +6,10 @@
     "TRAVIS_ACCESS_TOKEN": {
       "description": "Access token for TravisCi. See readme for details.",
       "required": false
+    },
+    "ROLLBAR": {
+      "description": "Rollbar API token to report errors.",
+      "required": false
     }
   },
   "keywords": ["ruby", "travis", "tdd", "sinatra", "github"]

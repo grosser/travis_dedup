@@ -10,8 +10,6 @@ if token = ENV["ROLLBAR"]
 
   require 'rollbar/middleware/sinatra'
   use Rollbar::Middleware::Sinatra
-elsif ENV["RACK_ENV"] == "production" && !ENV["NO_ROLLBAR"]
-  raise "Rollbar is not active! (disable by setting NO_ROLLBAR=1)"
 end
 
 run Sinatra::Application
