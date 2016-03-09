@@ -1,3 +1,5 @@
+[![Logo](https://raw.githubusercontent.com/grosser/travis_dedup/master/dedup.png)](https://github.com/grosser/travis_dedup)
+
 Stop all builds on the same PR when a new job starts.
 
 # Setup alternatives

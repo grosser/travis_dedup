@@ -1,9 +1,12 @@
 {
   "name": "Travis Dedup",
   "repository": "https://github.com/grosser/travis_dedup",
+  "logo": "https://raw.githubusercontent.com/grosser/travis_dedup/master/dedup.png",
   "env": {
     "TRAVIS_ACCESS_TOKEN": {
-      "description": "Access token for TravisCi. See readme for details."
+      "description": "Access token for TravisCi. See readme for details.",
+      "required": false
     }
-  }
+  },
+  "keywords": ["ruby", "travis", "tdd", "sinatra", "github"]
 }
