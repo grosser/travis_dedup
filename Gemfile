@@ -1,7 +1,6 @@
 source "https://rubygems.org"
 
-# TODO re-enable once the initial deploy with button works on heroku
-# ruby File.read('.ruby-version').strip if ENV["RACK_ENV"] == "production" # strict ruby version only on heroku
+ruby File.read('.ruby-version').strip
 
 gemspec
 
