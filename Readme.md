@@ -23,8 +23,8 @@ The hook sleeps for 5s before inspecting the builds so the newly pushed build ar
 
 
 ## B: Self hosting on heroku
-Pro: more complicated<br/>
-Con: travis token is never sent over the web
+Pro: travis token is never sent over the web<br/>
+Con: more complicated
 
  - If `TRAVIS_ACCESS_TOKEN` is set, token parameter is no longer required
  - [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
