@@ -102,8 +102,7 @@ module TravisDedup
       case response.status
       when 200 then JSON.parse(response.body)
       when 204 then nil
-      else
-        raise response.inspect
+      else raise Faraday::Error, response.inspect
       end
     end
   end

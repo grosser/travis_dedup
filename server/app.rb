@@ -54,7 +54,11 @@ post "/github" do
 
     TravisDedup.pro = params["pro"]
     TravisDedup.branches = params["branches"]
-    TravisDedup.dedup_message(repo, token)
+    begin
+      TravisDedup.dedup_message(repo, token)
+    rescue Faraday::Error
+      halt(500, $!.message)
+    end
   end
   ProdLog.write result
   result
