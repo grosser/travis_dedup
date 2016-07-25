@@ -77,6 +77,11 @@ describe TravisDedup do
         post '/github', repo: 'foo/bar', token: 'xyz', delay: '3'
       end
 
+      it "sleeps up to maximum delay only to prevent dos" do
+        Sinatra::Application.any_instance.should_receive(:sleep).with(5)
+        post '/github', repo: 'foo/bar', token: 'xyz', delay: '1000'
+      end
+
       it "silently fails when rate limited" do
         post '/github', repo: 'foo/bar', token: 'xyz'
         response.should == "STUB"

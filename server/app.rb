@@ -18,6 +18,7 @@ class ProdLog
 end
 
 LAST_CALLS = {}
+MAX_DELAY = 5
 
 def rate_limit(key, interval)
   now = Time.now.to_i
@@ -46,7 +47,7 @@ post "/github" do
   else
     ProdLog.write "STARTED #{repo}"
 
-    sleep((params["delay"] || 5).to_i) # wait for travis to see the newly pushed commit
+    sleep([(params["delay"] || MAX_DELAY).to_i, MAX_DELAY].min) # wait for travis to see the newly pushed commit
 
     token = params["token"] ||
       ENV['TRAVIS_ACCESS_TOKEN'] ||
