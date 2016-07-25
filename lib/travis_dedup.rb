@@ -102,7 +102,12 @@ module TravisDedup
       case response.status
       when 200 then JSON.parse(response.body)
       when 204 then nil
-      else raise Faraday::Error, response.inspect
+      else
+        raise(
+          Faraday::Error,
+          "Communication with travis failed when trying to #{method} #{path}\n" \
+          "Response: #{response.status} - #{response.body}"
+        )
       end
     end
   end

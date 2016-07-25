@@ -1,7 +1,11 @@
 require "spec_helper"
 
-github_token = "d092043dbbca509c8e3" << "61f812ece42156ef8d5f9" # token of user: some-public-token obfuscated so github does not delete it
-access_token = TravisDedup.access_token(github_token)
+# generate a new token
+# github_token = "d092043dbbca509c8e3" << "61f812ece42156ef8d5f9" # token of user: some-public-token obfuscated so github does not delete it
+# access_token = TravisDedup.access_token(github_token)
+
+# hardcoded for speed
+access_token = "mi0l8uQlX3U5EHbE0ym31g"
 repo = "some-public-token/travis-cron-test"
 
 require 'webmock/rspec'
@@ -70,6 +74,14 @@ describe TravisDedup do
         post '/github', repo: "foo/bar"
         last_response.status.should == 400
         last_response.body.should == "Missing parameter token"
+      end
+
+      it "fails when token is invalid and travis replies with 403" do
+        TravisDedup.unstub(:dedup_message)
+        WebMock.disable!
+        post '/github', repo: "some-public-token/travis-cron-test", token: 'wrong-token'
+        last_response.status.should == 500
+        last_response.body.should == "Communication with travis failed when trying to get repos/some-public-token/travis-cron-test/builds\nResponse: 403 - access denied"
       end
 
       it "sleeps given delay" do
