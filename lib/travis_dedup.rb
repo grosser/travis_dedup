@@ -73,7 +73,8 @@ module TravisDedup
         if seen.include?(id)
           true
         else
-          seen << id
+          # don't cancel master branch
+          seen << id if id != 'master'
           false
         end
       end
