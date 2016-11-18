@@ -1,5 +1,7 @@
 [![Logo](https://raw.githubusercontent.com/grosser/travis_dedup/master/dedup.png)](https://github.com/grosser/travis_dedup)
 
+*DEPRECATED* Travis will ship this as a feature in Q12017, currently in beta if you ask them.
+
 Stop all builds on the same PR when a new job starts.
 
 # Setup alternatives
