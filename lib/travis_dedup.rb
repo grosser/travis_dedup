@@ -5,6 +5,9 @@ require 'optparse'
 module TravisDedup
   ACTIVE = %w[created started queued]
 
+  RETRY = 3
+  class RetryWhen500 < StandardError; end
+
   class << self
     attr_accessor :pro, :verbose, :branches
 
@@ -98,10 +101,23 @@ module TravisDedup
     end
 
     def request(method, path, params, headers={})
+      attempts = 0
+      begin
+        faraday_send(method, path, params, headers)
+      rescue TravisDedup::RetryWhen500 => error
+        raise error if (attempts += 1) > RETRY
+        retry
+      end
+    end
+
+
+    def faraday_send(method, path, params, headers={})
       response = Faraday.send(method, "#{host}/#{path}", params, headers)
       case response.status
       when 200 then JSON.parse(response.body)
       when 204 then nil
+      when 500
+        raise TravisDedup::RetryWhen500
       else
         raise(
           Faraday::Error,
@@ -110,5 +126,6 @@ module TravisDedup
         )
       end
     end
+
   end
 end
