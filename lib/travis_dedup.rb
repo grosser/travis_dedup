@@ -5,8 +5,11 @@ require 'optparse'
 module TravisDedup
   ACTIVE = %w[created started queued]
 
+  RETRY = 3
+  class RetryWhen500 < StandardError; end
+
   class << self
-    attr_accessor :pro, :verbose, :branches
+    attr_accessor :pro, :verbose, :branches, :retry_option, :ignore_error_500
 
     def cli(argv)
       parser = OptionParser.new do |opts|
@@ -20,6 +23,8 @@ module TravisDedup
         BANNER
         opts.on("--pro", "travis pro") { self.pro = true }
         opts.on("--branches", "dedup builds on branches too") { self.branches = true }
+        opts.on("--retry [COUNT]", Integer, "number of times to retry when Travis returns a 500. #{RETRY} times by default") { |value| self.retry_option = value }
+        opts.on("--ignore-error-500", "let the build run when Travis API keeps returning 500") { self.ignore_error_500 = true }
         opts.on("-h", "--help","Show this") { puts opts; exit }
         opts.on('-v', '--version','Show Version'){ require 'travis_dedup/version'; puts TravisDedup::VERSION; exit}
       end
@@ -30,7 +35,11 @@ module TravisDedup
         return 1
       end
 
-      puts dedup_message(*argv)
+      begin
+        puts dedup_message(*argv)
+      rescue TravisDedup::RetryWhen500 => error
+        raise error unless ignore_error_500
+      end
       0
     end
 
@@ -98,10 +107,27 @@ module TravisDedup
     end
 
     def request(method, path, params, headers={})
+      attempts = 1
+      begin
+        faraday_send(method, path, params, headers)
+      rescue TravisDedup::RetryWhen500 => error
+        raise error if (attempts += 1) > max_attempts
+        puts "Travis returned an error 500. Retrying ..."
+        retry
+      end
+    end
+
+    def max_attempts
+      retry_option || RETRY
+    end
+
+    def faraday_send(method, path, params, headers={})
       response = Faraday.send(method, "#{host}/#{path}", params, headers)
       case response.status
       when 200 then JSON.parse(response.body)
       when 204 then nil
+      when 500
+        raise TravisDedup::RetryWhen500
       else
         raise(
           Faraday::Error,
@@ -110,5 +136,6 @@ module TravisDedup
         )
       end
     end
+
   end
 end
