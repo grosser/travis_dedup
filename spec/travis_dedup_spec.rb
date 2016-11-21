@@ -238,8 +238,8 @@ describe TravisDedup do
         to_return({:status => 500}, {:status => 500}, {:status => 500}, {:status => 500})
 
       expect do
-        TravisDedup.cli([repo, access_token, '--ignore_error_500'])
-      end.not_to raise_error(TravisDedup::RetryWhen500)
+        TravisDedup.cli([repo, access_token, '--ignore-error-500'])
+      end.not_to raise_error
     end
   end
 end
