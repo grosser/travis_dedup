@@ -9,7 +9,7 @@ module TravisDedup
   class RetryWhen500 < StandardError; end
 
   class << self
-    attr_accessor :pro, :verbose, :branches, :retry_option
+    attr_accessor :pro, :verbose, :branches, :retry_option, :ignore_error_500
 
     def cli(argv)
       parser = OptionParser.new do |opts|
@@ -24,6 +24,7 @@ module TravisDedup
         opts.on("--pro", "travis pro") { self.pro = true }
         opts.on("--branches", "dedup builds on branches too") { self.branches = true }
         opts.on("--retry [COUNT]", Integer, "number of times to retry when Travis returns a 500. #{RETRY} times by default") { |value| self.retry_option = value }
+        opts.on("--ignore-error-500", "let the build run when Travis API keeps returning 500") { self.ignore_error_500 = true }
         opts.on("-h", "--help","Show this") { puts opts; exit }
         opts.on('-v', '--version','Show Version'){ require 'travis_dedup/version'; puts TravisDedup::VERSION; exit}
       end
@@ -34,7 +35,11 @@ module TravisDedup
         return 1
       end
 
-      puts dedup_message(*argv)
+      begin
+        puts dedup_message(*argv)
+      rescue TravisDedup::RetryWhen500 => error
+        raise error unless ignore_error_500
+      end
       0
     end
 

@@ -230,5 +230,16 @@ describe TravisDedup do
         TravisDedup.cli([repo, access_token, '--retry=2'])
       end.to raise_error(TravisDedup::RetryWhen500)
     end
+
+    it "option --ignore_error_500 lets Travis run the build after x failed attempts
+          so it requires no manual intervention" do
+      WebMock.enable!
+      stub_request(:get, "https://api.travis-ci.org/repos/#{repo}/builds").
+        to_return({:status => 500}, {:status => 500}, {:status => 500}, {:status => 500})
+
+      expect do
+        TravisDedup.cli([repo, access_token, '--ignore_error_500'])
+      end.not_to raise_error(TravisDedup::RetryWhen500)
+    end
   end
 end
