@@ -9,7 +9,7 @@ module TravisDedup
   class RetryWhen500 < StandardError; end
 
   class << self
-    attr_accessor :pro, :verbose, :branches
+    attr_accessor :pro, :verbose, :branches, :retry_option
 
     def cli(argv)
       parser = OptionParser.new do |opts|
@@ -23,6 +23,7 @@ module TravisDedup
         BANNER
         opts.on("--pro", "travis pro") { self.pro = true }
         opts.on("--branches", "dedup builds on branches too") { self.branches = true }
+        opts.on("--retry [COUNT]", Integer, "number of times to retry when Travis returns a 500. #{RETRY} times by default") { |value| self.retry_option = value }
         opts.on("-h", "--help","Show this") { puts opts; exit }
         opts.on('-v', '--version','Show Version'){ require 'travis_dedup/version'; puts TravisDedup::VERSION; exit}
       end
@@ -101,15 +102,19 @@ module TravisDedup
     end
 
     def request(method, path, params, headers={})
-      attempts = 0
+      attempts = 1
       begin
         faraday_send(method, path, params, headers)
       rescue TravisDedup::RetryWhen500 => error
-        raise error if (attempts += 1) > RETRY
+        raise error if (attempts += 1) > max_attempts
+        puts "Travis returned an error 500. Retrying ..."
         retry
       end
     end
 
+    def max_attempts
+      retry_option || RETRY
+    end
 
     def faraday_send(method, path, params, headers={})
       response = Faraday.send(method, "#{host}/#{path}", params, headers)

@@ -210,9 +210,7 @@ describe TravisDedup do
         end
       end
     end
-  end
 
-  context "when a request to Travis returns a 500 error" do
     it "retries thrice by default, and then raises a RetryWhen500" do
       WebMock.enable!
       stub_request(:post, "https://api.travis-ci.org/foo/bar").
@@ -220,6 +218,16 @@ describe TravisDedup do
 
       expect do
         TravisDedup.send(:request, :post, "foo/bar", {}, {})
+      end.to raise_error(TravisDedup::RetryWhen500)
+    end
+
+    it "number of attempts can be configured through option --retry" do
+      WebMock.enable!
+      stub_request(:get, "https://api.travis-ci.org/repos/#{repo}/builds").
+        to_return({:status => 500}, {:status => 500}, {:status => 200, :body => '{}'})
+
+      expect do
+        TravisDedup.cli([repo, access_token, '--retry=2'])
       end.to raise_error(TravisDedup::RetryWhen500)
     end
   end
